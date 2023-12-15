@@ -147,54 +147,63 @@ class StockExample(server.App):
     # Після виконання коду, то він відповідає за завантаження туди даних. Для коректного відображення, ми видаляємо перші два рядки, для того, щоб залишались лише числові дані.
     # А також, ті числові дані, які нам треба ми переводимо із типу object в numeric (int, float) для корректної та відображення.
     def getData(self, params):
-        region = params["region_data"]
-        year = int(params["year"])
+        region = params["region_data"] # Отримання назви регіону з параметрів.
+        year = int(params["year"]) # Отримання року з параметрів та перетворення його в ціле число.
 
-        numbers = params["week"]
-        numbers = numbers.split("-")
-        week_from = int(numbers[0])
-        week_to = int(numbers[1])
-
+        numbers = params["week"] # Отримання діапазону тижнів у форматі рядка з параметрів.
+        numbers = numbers.split("-") # Розділення рядка на два числа, які представляють початковий та кінцевий тиждень.
+        week_from = int(numbers[0]) # Конвертація початкового тижня у ціле число.
+        week_to = int(numbers[1]) # Конвертація кінцевого тижня у ціле число.
+        
+        # Зчитування CSV-файлу, де вказується роздільник та назви стовпців.
         df = pd.read_csv("csv_data/" + region, delimiter='\,\s+|\,|\s+', engine='python', index_col=False, names=["year", "week", "SMN", "SMT", "VCI", "TCI", "VHI"])
+        
+        df = df.drop(df.index[:2]) # Видалення перших двох рядків з DataFrame.
+        df['year'] = pd.to_numeric(df['year'], errors='coerce') # Перетворення стовпця 'year' у числовий формат.
+        df['week'] = pd.to_numeric(df['week'], errors='coerce') # Перетворення стовпця 'week' у числовий формат.
 
-        df = df.drop(df.index[:2])
-        df['year'] = pd.to_numeric(df['year'], errors='coerce')
-        df['week'] = pd.to_numeric(df['week'], errors='coerce')
-
-        df = df.loc[df.year == year]
-        filtered_data = df[(df.week >= week_from) & (df.week <= week_to)]
+        df = df.loc[df.year == year] # Вибірка лише тих рядків, де рік співпадає із зазначеним роком.
+        filtered_data = df[(df.week >= week_from) & (df.week <= week_to)] # Відфільтрування даних за заданим діапазоном тижнів
 
         return filtered_data
 
     # Метод, який відповідає за побудову графіку plot. Датафрейм отримує за допомогою методу getData(), також для корректної роботи ми переводу з object в float наші дані.
     # Також трохи нормалізуємо її і будуємо графік з описом.
     def getPlot(self, params):
+        # Отримуємо дані на основі заданих параметрів і встановлюємо стовпець 'week' як індекс
         df = self.getData(params).set_index(['week'])
-
+        
+        # Конвертуємо певні стовпці в тип float
         df['SMN'] = df['SMN'].astype("float")
         df['SMT'] = df['SMT'].astype("float")
         df['VCI'] = df['VCI'].astype("float")
         df['TCI'] = df['TCI'].astype("float")
         df['VHI'] = df['VHI'].astype("float")
 
-        year = params["year"]
+        year = params["year"] # Витягуємо рік з параметрів
 
-        data_week = params["week"]
-        numbers = data_week.split("-")
+        # Витягуємо та розбираємо діапазон тижнів з параметрів
+        data_week = params["week"]  # Отримання параметра "week" і збереження його в змінну data_week.
+        numbers = data_week.split("-") # Розділення рядка data_week за допомогою дефісу ("-") і збереження результатів у списку numbers
         data_week = data_week.split("-")
-        numbers[0] = int(numbers[0])
-        numbers[1] = int(numbers[1])
+        numbers[0] = int(numbers[0]) # Конвертація першого елемента в ціле число
+        numbers[1] = int(numbers[1]) # Конвертація другого елемента в ціле число
 
+        # Витягуємо дані індексу з параметрів
         indexes = params["index_data"]
 
+        # Вибираємо лише вказані стовпці індексів з DataFrame
         df = df[[indexes]]
-        plot_obj = df.plot()
-
+        plot_obj = df.plot() # Створюємо об'єкт графіка на основі вибраних стовпців індексів
+        
+        # Встановлюємо заголовок графіку
         plot_obj.set_title(indexes + " for the selected year " + year)
-        plot_obj.set_ylabel(indexes + ", %")
+        plot_obj.set_ylabel(indexes + ", %") # Встановлюємо підпис для осі y
+        # Встановлюємо підпис для осі x
         plot_obj.set_xlabel(
             "The selected period starting from week " + data_week[0] + " to " + data_week[1] + " for the year " + year)
-
+        
+        # Отримуємо об'єкт графіку
         line_plot = plot_obj.get_figure()
         return line_plot
 
@@ -204,4 +213,4 @@ class StockExample(server.App):
 
 #download()
 app = StockExample()
-app.launch(port=8080)
+app.launch(port=8080) #Запуск екземпляру класу StockExample за допомогою методу launch.
